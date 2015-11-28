@@ -1,5 +1,8 @@
 ﻿#define NO_COMP
 #define CHUNK_SIZE 64
+#define BIT512 64
+#define BIT448 56
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -8,7 +11,7 @@ inline int leftRotate(unsigned int a, int i){
 }
 void castToChar(char* ptr, int val){
 	for (int i = 0; i < 4; i++){
-		ptr[i] = (val & (0xFF000000 >> (i*8)));
+		ptr[i] = (val & (0xFF000000 >> (i * 8)));
 	}
 }
 
@@ -19,7 +22,7 @@ void castLongToChar(char* ptr, long int val){
 }
 
 int castCharToInt(char* ptr){
-	return (ptr[0] | 0x00000000) | (ptr[1] | 0x00000000) | (ptr[2] | 0x00000000) | (ptr[3] | 0x00000000);
+	return (ptr[3] & 0x000000FF) | ((ptr[2] & 0x000000FF)<<8) | ((ptr[1] & 0x000000FF)<<16) | ((ptr[0] & 0x000000FF)<<24);
 }
 char* calculateHash(std::string path){
 	int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
@@ -57,96 +60,89 @@ char* calculateHash(std::string path){
 	unsigned int b0 = 0xefcdab89;  //B
 	unsigned int c0 = 0x98badcfe;  //C
 	unsigned int d0 = 0x10325476;  //D
-	input.seekg(0,input.end);
-	long int size = input.tellg();
+	input.seekg(0, input.end);
+	long int size = input.tellg() * 8;
 	long int remaining = size;
 	input.seekg(0, input.beg);
-	bool overflow = false;
-	//append 1
-	//append 0
-	while (remaining >0 && !overflow){// operate on chunk
+	bool cont = true;
+	while (cont){// operate on chunk
 		//prepare chunk of data
 		char buffer[CHUNK_SIZE];
-		if (overflow){
-			for (int i = 0; i < 56; i++){
-				buffer[i] = 0;
+		input.read(buffer, CHUNK_SIZE);
+		if (remaining < BIT512){ 
+			int start;
+			if (remaining >= 0){
+				buffer[remaining] = 0x80; //append 1 
+				start = remaining +1; // start writting 0s starting from remaining+1
 			}
-			castLongToChar(buffer + 56, size);
-			if ((size % 64) == 0){
-				buffer[0] = 0x80;
+			else{ 
+				start = 0; // start writing 0s starting from 0
 			}
-		}
-		else{
-			input.read(buffer, CHUNK_SIZE);
-			if (remaining < 56){
-				buffer[remaining] = 0x80;
-				for (int i = remaining + 1; i < 56; i++){
-					buffer[i] = 0;
-				}
-				castLongToChar(buffer + 56, size);
+			int max;
+			if (remaining > BIT448){
+				max = BIT512; //fill the rest with 0s as there is gonna be another chunk after this
 			}
-			else if (remaining >= 56 && remaining < 64){
-				buffer[remaining] = 0x80;
-				for (int i = remaining + 1; i < 64; i++){
-					buffer[i] = 0;
-				}
-				overflow = true;
+			else{
+				max = BIT448; //fill with 0s only up to 448
 			}
-			else if (remaining == 64){
-				overflow = true;
+			for (int i = start; i < max; i++){
+				buffer[i] = 0; 
+			}
+			if (remaining < BIT448){
+				castLongToChar(buffer + BIT448, size);
+				cont = false;
 			}
 		}
-		//divide chunk
-		unsigned int M[16];
-		for (int i = 0; i < 16; i++){
-			M[i] = castCharToInt(buffer + i * 4);
-		}
-		unsigned int A = a0;
-		unsigned int B = b0;
-		unsigned int C = c0;
-		unsigned int D = d0;
-		unsigned int F;
-		unsigned int temp;
-		int g;
-		for (int i = 0; i < 64; i++){
-			if (0 <= i && i <= 15){
-				F = (B & C) | ((~B) & D);
-				g = i;
-			}
-			else if (16 <= i && i <= 31){
-				F = (D & B) | ((~D) & C);
-				g = (5 * i + 1) % 16;
-			}
-			else if (32 <= i & i <= 47){
-				F = B ^ C ^ D;
-				g = (3 * i + 5) % 16;
-			}
-			else if (48 <= i & i <= 63){
-				F = C ^ (B | (~D));
-				g = (7 * i) % 16;
-			}
-			temp = D;
-			D = C;
-			C = B;
-			B = B + leftRotate((A + F + sines[i] + M[g]), shifts[i]);
-			A = temp;
-		}
-		a0 += A;
-		b0 += B;
-		c0 += C;
-		d0 += D;
-		remaining -= 64;
+	//divide chunk
+	unsigned int M[16];
+	for (int i = 0; i < 16; i++){
+		M[i] = castCharToInt(buffer + i * 4);
 	}
-	char hash[16];
-	castToChar(hash, a0);
-	castToChar(hash + 4, b0);
-	castToChar(hash + 8, c0);
-	castToChar(hash + 12,d0);
-	return hash;
+	unsigned int A = a0;
+	unsigned int B = b0;
+	unsigned int C = c0;
+	unsigned int D = d0;
+	unsigned int F;
+	unsigned int temp;
+	int g;
+	for (int i = 0; i < 64; i++){
+		if (0 <= i && i <= 15){
+			F = (B & C) | ((~B) & D);
+			g = i;
+		}
+		else if (16 <= i && i <= 31){
+			F = (D & B) | ((~D) & C);
+			g = (5 * i + 1) % 16;
+		}
+		else if (32 <= i & i <= 47){
+			F = B ^ C ^ D;
+			g = (3 * i + 5) % 16;
+		}
+		else if (48 <= i & i <= 63){
+			F = C ^ (B | (~D));
+			g = (7 * i) % 16;
+		}
+		temp = D;
+		D = C;
+		C = B;
+		B = B + leftRotate((A + F + sines[i] + M[g]), shifts[i]);
+		A = temp;
+	}
+	a0 += A;
+	b0 += B;
+	c0 += C;
+	d0 += D;
+	remaining -= 64;
+}
+std::cout << std::hex << a0;
+std::cout << std::hex << b0;
+std::cout << std::hex << c0;
+std::cout << std::hex << d0;
+input.close();
 }
 
 
 int main(){
-	std::cout<<calculateHash("C:\\test.txt");
+	calculateHash("C:\\test.txt");
 	return 0;
 }
