@@ -1,7 +1,8 @@
-﻿#define NO_COMP
+﻿// według https://de.wikipedia.org/wiki/Message-Digest_Algorithm_5
+#define NO_COMP
 #define CHUNK_SIZE 64
-#define BIT512 64
-#define BIT448 56
+#define BIT512 512
+#define BIT448 448
 
 #include <string>
 #include <fstream>
@@ -15,14 +16,17 @@ void castToChar(char* ptr, int val){
 	}
 }
 
-void castLongToChar(char* ptr, long int val){
+void castLongToChar(char* ptr, long long int val){
 	for (int i = 0; i < 8; i++){
-		ptr[i] = (val & (0xFF00000000000000 >> (i * 8)));
+		ptr[i] = 0xFF & (val >> (i * 8));
 	}
 }
 
+int littleToBigEndian(int val){
+	return ((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24);
+}
 int castCharToInt(char* ptr){
-	return (ptr[3] & 0x000000FF) | ((ptr[2] & 0x000000FF)<<8) | ((ptr[1] & 0x000000FF)<<16) | ((ptr[0] & 0x000000FF)<<24);
+	return (ptr[0] & 0x000000FF) | ((ptr[1] & 0x000000FF)<<8) | ((ptr[2] & 0x000000FF)<<16) | ((ptr[3] & 0x000000FF)<<24);
 }
 char* calculateHash(std::string path){
 	int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
@@ -33,7 +37,7 @@ char* calculateHash(std::string path){
 	// Precomputed sines
 	int sines[64];
 	for(int i=0;i<64;i++){
-		sines[i] = floor(232 × abs(sin(i + 1)))
+		sines[i] = floor(pow(2, 32) * abs(sin(i + 1)));
 	}
 #else
 	unsigned int sines[64] = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, //0-3
@@ -61,8 +65,8 @@ char* calculateHash(std::string path){
 	unsigned int c0 = 0x98badcfe;  //C
 	unsigned int d0 = 0x10325476;  //D
 	input.seekg(0, input.end);
-	long int size = input.tellg() * 8;
-	long int remaining = size;
+	long long int size = input.tellg();
+	long long int remaining = size*8;
 	input.seekg(0, input.beg);
 	bool cont = true;
 	while (cont){// operate on chunk
@@ -72,24 +76,24 @@ char* calculateHash(std::string path){
 		if (remaining < BIT512){ 
 			int start;
 			if (remaining >= 0){
-				buffer[remaining] = 0x80; //append 1 
-				start = remaining +1; // start writting 0s starting from remaining+1
+				buffer[remaining/8] = 0x80; //append 1 
+				start = remaining/8 +1; // start writting 0s starting from remaining+1
 			}
 			else{ 
 				start = 0; // start writing 0s starting from 0
 			}
 			int max;
 			if (remaining > BIT448){
-				max = BIT512; //fill the rest with 0s as there is gonna be another chunk after this
+				max = BIT512/8; //fill the rest with 0s as there is gonna be another chunk after this
 			}
 			else{
-				max = BIT448; //fill with 0s only up to 448
+				max = BIT448/8; //fill with 0s only up to 448
 			}
 			for (int i = start; i < max; i++){
 				buffer[i] = 0; 
 			}
 			if (remaining < BIT448){
-				castLongToChar(buffer + BIT448, size);
+				castLongToChar(buffer + (BIT448/8), size*8);
 				cont = false;
 			}
 		}
@@ -105,6 +109,7 @@ char* calculateHash(std::string path){
 	unsigned int F;
 	unsigned int temp;
 	int g;
+	//main loop
 	for (int i = 0; i < 64; i++){
 		if (0 <= i && i <= 15){
 			F = (B & C) | ((~B) & D);
@@ -112,32 +117,39 @@ char* calculateHash(std::string path){
 		}
 		else if (16 <= i && i <= 31){
 			F = (D & B) | ((~D) & C);
-			g = (5 * i + 1) % 16;
+			g = ((5 * i + 1) & 0x0F);
 		}
 		else if (32 <= i & i <= 47){
 			F = B ^ C ^ D;
-			g = (3 * i + 5) % 16;
+			g = ((3 * i + 5) & 0x0F);
 		}
 		else if (48 <= i & i <= 63){
 			F = C ^ (B | (~D));
-			g = (7 * i) % 16;
+			g = ((7 * i) & 0x0F);
 		}
 		temp = D;
 		D = C;
 		C = B;
 		B = B + leftRotate((A + F + sines[i] + M[g]), shifts[i]);
 		A = temp;
+		int debug[4] = { A, B, C, D };
+		std::cout << "A = " << std::hex << debug[(i + 1) & 3];
+		std::cout << " B = " << std::hex << debug[(i + 2) & 3];
+		std::cout << " C = " << std::hex << debug[(i + 3) & 3];
+		std::cout << " D = " << std::hex << debug[(i) & 3];
+		std::cout << std::endl;
+
 	}
 	a0 += A;
 	b0 += B;
 	c0 += C;
 	d0 += D;
-	remaining -= 64;
+	remaining -= 512;
 }
-std::cout << std::hex << a0;
-std::cout << std::hex << b0;
-std::cout << std::hex << c0;
-std::cout << std::hex << d0;
+std::cout << std::hex << littleToBigEndian(a0);
+std::cout << std::hex << littleToBigEndian(b0);
+std::cout << std::hex << littleToBigEndian(c0);
+std::cout << std::hex << littleToBigEndian(d0);
 input.close();
 }
 
