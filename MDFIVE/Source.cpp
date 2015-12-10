@@ -3,7 +3,8 @@
 #define CHUNK_SIZE 64
 #define BIT512 512
 #define BIT448 448
-
+#include <windows.h>
+#include <winbase.h>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -155,6 +156,10 @@ input.close();
 
 
 int main(){
-	calculateHash("C:\\test.txt");
+	typedef void(*super)(const char* lpString);
+	HMODULE hModule = LoadLibrary(TEXT("MDFIVEDll.dll"));
+	super func = (super)GetProcAddress(hModule, "TestProc1");
+	func("allahu akbart");
+	//calculateHash("C:\\test.txt");
 	return 0;
 }

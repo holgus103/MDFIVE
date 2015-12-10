@@ -1,0 +1,5 @@
+LIBRARY MDFIVEDll ; name of dll
+EXPORTS
+    Init    ; used to get dll handle
+    TestProc1 
+    ProcByOrdinal @100 NONAME ; exported by ordinal 100 only, no name in exort table
