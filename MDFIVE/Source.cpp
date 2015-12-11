@@ -3,11 +3,13 @@
 #define CHUNK_SIZE 64
 #define BIT512 512
 #define BIT448 448
+#define ASM
 #include <windows.h>
 #include <winbase.h>
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <time.h>
 inline int leftRotate(unsigned int a, int i){
 	return (a << i | a >> 32 - i);
 }
@@ -112,19 +114,19 @@ char* calculateHash(std::string path){
 	int g;
 	//main loop
 	for (int i = 0; i < 64; i++){
-		if (0 <= i && i <= 15){
+		if (0 <= i && i <= 15){//F
 			F = (B & C) | ((~B) & D);
 			g = i;
 		}
-		else if (16 <= i && i <= 31){
+		else if (16 <= i && i <= 31){//G
 			F = (D & B) | ((~D) & C);
 			g = ((5 * i + 1) & 0x0F);
 		}
-		else if (32 <= i & i <= 47){
+		else if (32 <= i & i <= 47){//H
 			F = B ^ C ^ D;
 			g = ((3 * i + 5) & 0x0F);
 		}
-		else if (48 <= i & i <= 63){
+		else if (48 <= i & i <= 63){//I
 			F = C ^ (B | (~D));
 			g = ((7 * i) & 0x0F);
 		}
@@ -156,10 +158,50 @@ input.close();
 
 
 int main(){
-	typedef void(*super)(const char* lpString);
+	int F = 0, B = 0xefcdab89, C = 0x98badcfe, D = 0x10325476;
+	clock_t time, end;
+	typedef int(*MD5Func)(int B, int C, int D);
 	HMODULE hModule = LoadLibrary(TEXT("MDFIVEDll.dll"));
-	super func = (super)GetProcAddress(hModule, "TestProc1");
-	func("allahu akbart");
+	MD5Func FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
+	MD5Func GFunc = (MD5Func)GetProcAddress(hModule, "GFunc");
+	MD5Func HFunc = (MD5Func)GetProcAddress(hModule, "HFunc");
+	MD5Func IFunc = (MD5Func)GetProcAddress(hModule, "IFunc");
+	time = clock();
+	for (int i = 0; i < 10000000;i++)
+	F = FFunc(B, C,D);
+	end = clock();
+	std::cout << "F asm: " <<  end - time << std::endl;
+	time = clock();
+	for (int i = 0; i < 10000000; i++)
+	F = (B & C) | ((~B) & D);
+	end = clock();
+	std::cout << "F c: " << end - time << std::endl;
+	/*time = clock();
+	F = GFunc(B, C, D);
+	end = clock();
+	std::cout << "G asm: " << time - end << std::endl;
+	time = clock();
+	F = (D & B) | ((~D) & C);
+	end = clock();
+	std::cout << "G c: " << time - end << std::endl;
+	time = clock();
+	F = HFunc(B, C, D);
+	end = clock();
+	std::cout << "H asm: " << time - end << std::endl;
+	time = clock();
+	F = B ^ C ^ D;
+	end = clock();
+	std::cout << "H c: " << time - end << std::endl;
+	time = clock();
+	F = IFunc(B, C, D);
+	end = clock();
+	std::cout << "I asm: " << time - end << std::endl;
+	time = clock();
+	F = C ^ (B | (~D));
+	end = clock();
+	std::cout << "I c: " << time - end << std::endl;
+	time = clock();*/
+	FreeModule(hModule);
 	//calculateHash("C:\\test.txt");
 	return 0;
 }
