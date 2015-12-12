@@ -1,3 +1,4 @@
+// reference https://de.wikipedia.org/wiki/Message-Digest_Algorithm_5
 #include <string>
 #include <fstream>
 #include <iostream>

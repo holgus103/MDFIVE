@@ -4,29 +4,31 @@
 #define BIT448 448
 #include "MD5.h"
 #include <sstream>
-#pragma unmanaged
-
+	// Performs a simple rotation
 	int MD5::leftRotate(unsigned int a, int i){
 		return (a << i | a >> 32 - i);
 	}
+	// Writes an int to an array of char (big endian)
 	void MD5::castToChar(char* ptr, int val){
 		for (int i = 0; i < 4; i++){
-			ptr[i] = (val & (0xFF000000 >> (i * 8)));
+			ptr[i] = (val & (0xFF000000 >> (i * 8)))>>((3-i)*8);
 		}
 	}
-
+	// Writes an long long int to an array of char (little endian)
 	void MD5::castLongToChar(char* ptr, long long int val){
 		for (int i = 0; i < 8; i++){
 			ptr[i] = 0xFF & (val >> (i * 8));
 		}
 	}
-
+	// Returns an little endian int as big endian int
 	int MD5::littleToBigEndian(int val){
 		return ((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24);
 	}
+	// Returns an array of 4 char as an int (big endian)
 	int MD5::castCharToInt(char* ptr){
 		return (ptr[0] & 0x000000FF) | ((ptr[1] & 0x000000FF) << 8) | ((ptr[2] & 0x000000FF) << 16) | ((ptr[3] & 0x000000FF) << 24);
 	}
+	// Returns a MD5 hash for the file path supplied as parameter
 	std::string MD5::calculateHash(std::string path){
 		int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
 			5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, //15-31
@@ -82,7 +84,7 @@
 					start = 0; // start writing 0s starting from 0
 				}
 				int max;
-				if (remaining > BIT448){
+				if (remaining >= BIT448){
 					max = BIT512 / 8; //fill the rest with 0s as there is gonna be another chunk after this
 				}
 				else{

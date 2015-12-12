@@ -1,4 +1,4 @@
-﻿// według https://de.wikipedia.org/wiki/Message-Digest_Algorithm_5
+﻿
 
 #define ASM
 #include <windows.h>
