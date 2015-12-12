@@ -1,10 +1,5 @@
 include /masm32/include/masm32rt.inc
 
-.data
-szLoading       BYTE    "Dll is loading", 0
-szUnloading     BYTE    "Dll is un-loading", 0
-szOrdinal       BYTE    "Look ma, I was called by ordinal!", 0
-
 .data?
 hInst           DWORD   ?
 
