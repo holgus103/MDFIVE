@@ -9,5 +9,5 @@ namespace MD5{
 	void castLongToChar(char* ptr, long long int val);
 	int littleToBigEndian(int val);
 	int castCharToInt(char* ptr);
-	std::string calculateHash(std::string path);
+	std::string calculateHash(std::string path, bool useAsm);
 };

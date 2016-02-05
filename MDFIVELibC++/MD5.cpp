@@ -2,8 +2,11 @@
 #define CHUNK_SIZE 64
 #define BIT512 512
 #define BIT448 448
+#define ASM
 #include "MD5.h"
 #include <sstream>
+#include <Windows.h>
+#include <time.h>
 	// Performs a simple rotation
 	int MD5::leftRotate(unsigned int a, int i){
 		return (a << i | a >> 32 - i);
@@ -29,7 +32,22 @@
 		return (ptr[0] & 0x000000FF) | ((ptr[1] & 0x000000FF) << 8) | ((ptr[2] & 0x000000FF) << 16) | ((ptr[3] & 0x000000FF) << 24);
 	}
 	// Returns a MD5 hash for the file path supplied as parameter
-	std::string MD5::calculateHash(std::string path){
+	std::string MD5::calculateHash(std::string path, bool useAsm){
+		int arr[] = { 1, 2, 3, 4 };
+		int res[] = { 4, 3, 2, 1 };
+		clock_t time, end;
+		time = clock();
+		if (useAsm){
+		typedef int(*MD5Func)(int, int, int);
+		typedef void(*UpdateHash)(int*,int*);
+		HMODULE hModule = LoadLibrary(TEXT("MDFIVEAsmDll.dll"));
+		MD5Func FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
+		MD5Func GFunc = (MD5Func)GetProcAddress(hModule, "GFunc");
+		MD5Func HFunc = (MD5Func)GetProcAddress(hModule, "HFunc");
+		MD5Func IFunc = (MD5Func)GetProcAddress(hModule, "IFunc");
+		UpdateHash updateHash = (UpdateHash)GetProcAddress(hModule, "UpdateHash");
+		updateHash(arr,res);
+		}
 		int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
 			5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, //15-31
 			4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, //32-47
@@ -113,18 +131,22 @@
 			//main loop
 			for (int i = 0; i < 64; i++){
 				if (0 <= i && i <= 15){//F
+					//F = FFunc(B,C,D);
 					F = (B & C) | ((~B) & D);
 					g = i;
 				}
 				else if (16 <= i && i <= 31){//G
+					//F = GFunc(B, C, D);
 					F = (D & B) | ((~D) & C);
 					g = ((5 * i + 1) & 0x0F);
 				}
 				else if (32 <= i & i <= 47){//H
+					//F = HFunc(B, C, D);
 					F = B ^ C ^ D;
 					g = ((3 * i + 5) & 0x0F);
 				}
 				else if (48 <= i & i <= 63){//I
+					//F = IFunc(B, C, D);
 					F = C ^ (B | (~D));
 					g = ((7 * i) & 0x0F);
 				}
@@ -133,12 +155,12 @@
 				C = B;
 				B = B + MD5::leftRotate((A + F + sines[i] + M[g]), shifts[i]);
 				A = temp;
-				int debug[4] = { A, B, C, D };
-				std::cout << "A = " << std::hex << debug[(i + 1) & 3];
-				std::cout << " B = " << std::hex << debug[(i + 2) & 3];
-				std::cout << " C = " << std::hex << debug[(i + 3) & 3];
-				std::cout << " D = " << std::hex << debug[(i)& 3];
-				std::cout << std::endl;
+				//int debug[4] = { A, B, C, D };
+				//std::cout << "A = " << std::hex << debug[(i + 1) & 3];
+				//std::cout << " B = " << std::hex << debug[(i + 2) & 3];
+				//std::cout << " C = " << std::hex << debug[(i + 3) & 3];
+				//std::cout << " D = " << std::hex << debug[(i)& 3];
+				//std::cout << std::endl;
 
 			}
 			a0 += A;
@@ -153,6 +175,10 @@
 		s << std::hex << littleToBigEndian(b0);
 		s << std::hex << littleToBigEndian(c0);
 		s << std::hex << littleToBigEndian(d0);
+		end = clock();
+		std::cout << end - time;
 		input.close();
+		/*if (hModule!=null)
+		FreeModule(hModule);*/
 		return s.str();
 	}
