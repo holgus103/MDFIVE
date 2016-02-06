@@ -92,11 +92,11 @@ IFunc endp
 UpdateHash proc current: PTR DWORD,
 				results: PTR DWORD
 	mov eax, results
-	movups xmm1,[eax]
+	movups xmm1,results
 	mov eax, current
-	movups xmm0,[eax]
+	movups xmm0,current
 	paddb xmm0,xmm1
-	movups [eax],xmm0
+	movups current,xmm0
 	ret
 UpdateHash endp	
 end SuperDuperEntryPoint

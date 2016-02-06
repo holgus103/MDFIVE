@@ -1,4 +1,3 @@
-#define NO_COMP
 #define CHUNK_SIZE 64
 #define BIT512 512
 #define BIT448 448
@@ -33,32 +32,28 @@
 	}
 	// Returns a MD5 hash for the file path supplied as parameter
 	std::string MD5::calculateHash(std::string path, bool useAsm){
-		int arr[] = { 1, 2, 3, 4 };
-		int res[] = { 4, 3, 2, 1 };
-		clock_t time, end;
-		time = clock();
-		if (useAsm){
 		typedef int(*MD5Func)(int, int, int);
-		typedef void(*UpdateHash)(int*,int*);
-		HMODULE hModule = LoadLibrary(TEXT("MDFIVEAsmDll.dll"));
-		MD5Func FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
-		MD5Func GFunc = (MD5Func)GetProcAddress(hModule, "GFunc");
-		MD5Func HFunc = (MD5Func)GetProcAddress(hModule, "HFunc");
-		MD5Func IFunc = (MD5Func)GetProcAddress(hModule, "IFunc");
-		UpdateHash updateHash = (UpdateHash)GetProcAddress(hModule, "UpdateHash");
-		updateHash(arr,res);
+		typedef void(*UpdateHash)(int,int);
+		MD5Func FFunc = NULL;
+		MD5Func GFunc = NULL;
+		MD5Func HFunc = NULL;
+		MD5Func IFunc = NULL;
+		UpdateHash updateHash = NULL;
+		HMODULE hModule = NULL;
+		int arr[4] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 };
+		int res[4];
+		if (useAsm){
+		hModule = LoadLibrary(TEXT("MDFIVEAsmDll.dll"));
+		FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
+		GFunc = (MD5Func)GetProcAddress(hModule, "GFunc");
+		HFunc = (MD5Func)GetProcAddress(hModule, "HFunc");
+		IFunc = (MD5Func)GetProcAddress(hModule, "IFunc");
+		updateHash = (UpdateHash)GetProcAddress(hModule, "UpdateHash");
 		}
 		int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
 			5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, //15-31
 			4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, //32-47
 			6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21 }; //48-63
-#ifndef NO_COMP
-		// Precomputed sines
-		int sines[64];
-		for (int i = 0; i<64; i++){
-			sines[i] = floor(pow(2, 32) * abs(sin(i + 1)));
-		}
-#else
 		unsigned int sines[64] = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, //0-3
 			0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501, //4-7
 			0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, //8-11
@@ -75,14 +70,9 @@
 			0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1, //52-55
 			0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, //56-59
 			0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391 };//60-63
-#endif
 		// init hash parts
 		std::ifstream input;
 		input.open(path, std::ios::binary);
-		unsigned int a0 = 0x67452301;  //A
-		unsigned int b0 = 0xefcdab89;  //B
-		unsigned int c0 = 0x98badcfe;  //C
-		unsigned int d0 = 0x10325476;  //D
 		input.seekg(0, input.end);
 		long long int size = input.tellg();
 		long long int remaining = size * 8;
@@ -121,64 +111,78 @@
 			for (int i = 0; i < 16; i++){
 				M[i] = castCharToInt(buffer + i * 4);
 			}
-			unsigned int A = a0;
-			unsigned int B = b0;
-			unsigned int C = c0;
-			unsigned int D = d0;
+			res[0] = arr[0];
+			res[1] = arr[1];
+			res[2] = arr[2];
+			res[3] = arr[3];
 			unsigned int F;
 			unsigned int temp;
 			int g;
 			//main loop
 			for (int i = 0; i < 64; i++){
-				if (0 <= i && i <= 15){//F
-					//F = FFunc(B,C,D);
-					F = (B & C) | ((~B) & D);
-					g = i;
+				if (useAsm){
+					if (0 <= i && i <= 15){//F
+						F = FFunc(res[1],res[2],res[3]);
+						g = i;
+					}
+					else if (16 <= i && i <= 31){//G
+						F = GFunc(res[1], res[2], res[3]);
+						g = ((5 * i + 1) & 0x0F);
+					}
+					else if (32 <= i & i <= 47){//H
+						F = HFunc(res[1], res[2], res[3]);
+						g = ((3 * i + 5) & 0x0F);
+					}
+					else if (48 <= i & i <= 63){//I
+						F = IFunc(res[1], res[2], res[3]);
+						g = ((7 * i) & 0x0F);
+					}
 				}
-				else if (16 <= i && i <= 31){//G
-					//F = GFunc(B, C, D);
-					F = (D & B) | ((~D) & C);
-					g = ((5 * i + 1) & 0x0F);
+				else{
+					if (0 <= i && i <= 15){//F
+						F = (res[1] & res[2]) | ((~res[1]) & res[3]);
+						g = i;
+					}
+					else if (16 <= i && i <= 31){//G
+						F = (res[3] & res[1]) | ((~res[3]) & res[2]);
+						g = ((5 * i + 1) & 0x0F);
+					}
+					else if (32 <= i & i <= 47){//H
+						F = res[1] ^ res[2] ^ res[3];
+						g = ((3 * i + 5) & 0x0F);
+					}
+					else if (48 <= i & i <= 63){//I
+						F = res[2] ^ (res[1] | (~res[3]));
+						g = ((7 * i) & 0x0F);
+					}
 				}
-				else if (32 <= i & i <= 47){//H
-					//F = HFunc(B, C, D);
-					F = B ^ C ^ D;
-					g = ((3 * i + 5) & 0x0F);
-				}
-				else if (48 <= i & i <= 63){//I
-					//F = IFunc(B, C, D);
-					F = C ^ (B | (~D));
-					g = ((7 * i) & 0x0F);
-				}
-				temp = D;
-				D = C;
-				C = B;
-				B = B + MD5::leftRotate((A + F + sines[i] + M[g]), shifts[i]);
-				A = temp;
-				//int debug[4] = { A, B, C, D };
-				//std::cout << "A = " << std::hex << debug[(i + 1) & 3];
-				//std::cout << " B = " << std::hex << debug[(i + 2) & 3];
-				//std::cout << " C = " << std::hex << debug[(i + 3) & 3];
-				//std::cout << " D = " << std::hex << debug[(i)& 3];
-				//std::cout << std::endl;
+				temp = res[3];
+				res[3] = res[2];
+				res[2] = res[1];
+				res[1] = res[1] + MD5::leftRotate((res[0] + F + sines[i] + M[g]), shifts[i]);
+				res[0] = temp;
+
 
 			}
-			a0 += A;
-			b0 += B;
-			c0 += C;
-			d0 += D;
+			if (useAsm){
+				updateHash(arr[0], res[0]);
+			}
+			else{
+				arr[0] += res[0];
+				arr[1] += res[1];
+				arr[2] += res[2];
+				arr[3] += res[3];
+			}
 			remaining -= 512;
 		}
 		std::stringstream s;
 
-		s << std::hex << littleToBigEndian(a0);
-		s << std::hex << littleToBigEndian(b0);
-		s << std::hex << littleToBigEndian(c0);
-		s << std::hex << littleToBigEndian(d0);
-		end = clock();
-		std::cout << end - time;
+		s << std::hex << littleToBigEndian(arr[0]);
+		s << std::hex << littleToBigEndian(arr[1]);
+		s << std::hex << littleToBigEndian(arr[2]);
+		s << std::hex << littleToBigEndian(arr[3]);
 		input.close();
-		/*if (hModule!=null)
-		FreeModule(hModule);*/
+		if (hModule!=NULL)
+		FreeModule(hModule);
 		return s.str();
 	}
