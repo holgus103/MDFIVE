@@ -32,8 +32,8 @@
 	}
 	// Returns a MD5 hash for the file path supplied as parameter
 	std::string MD5::calculateHash(std::string path, bool useAsm){
-		typedef int(*MD5Func)(int, int, int);
-		typedef void(*UpdateHash)(int,int);
+		typedef int(__stdcall *MD5Func)(int, int, int);
+		typedef void(__stdcall *UpdateHash)(int*,int*);
 		MD5Func FFunc = NULL;
 		MD5Func GFunc = NULL;
 		MD5Func HFunc = NULL;
@@ -165,7 +165,7 @@
 
 			}
 			if (useAsm){
-				updateHash(arr[0], res[0]);
+				updateHash(arr, res);
 			}
 			else{
 				arr[0] += res[0];

@@ -1,5 +1,6 @@
 include /masm32/include/masm32rt.inc
 .xmm
+.model flat,stdcall
 .data?
 hInst           DWORD   ?
 .data 
@@ -23,6 +24,7 @@ sines   DWORD  0d76aa478h, 0e8c7b756h, 0242070dbh, 0c1bdceeeh ;0-3
 		DWORD	0655b59c3h, 08f0ccc92h, 0ffeff47dh, 085845dd1h ;52-55
 		DWORD	06fa87e4fh, 0fe2ce6e0h, 0a3014314h, 04e0811a1h ;56-59
 		DWORD	0f7537e82h, 0bd3af235h, 02ad7d2bbh, 0eb86d391h  ;60-63
+asd     DWORD   0f7537e82h, 0bd3af235h, 02ad7d2bbh, 0eb86d391h
 .code
 SuperDuperEntryPoint proc hInstDLL:DWORD, reason:DWORD, lpvReserved:DWORD
     
@@ -92,11 +94,11 @@ IFunc endp
 UpdateHash proc current: PTR DWORD,
 				results: PTR DWORD
 	mov eax, results
-	movups xmm1,results
+	movups xmm1,[eax]
 	mov eax, current
-	movups xmm0,current
-	paddb xmm0,xmm1
-	movups current,xmm0
+	movups xmm0,[eax]
+	paddd xmm0,xmm1
+	movups [eax],xmm0
 	ret
 UpdateHash endp	
 end SuperDuperEntryPoint
