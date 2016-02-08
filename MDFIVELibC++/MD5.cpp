@@ -31,7 +31,7 @@
 		return (ptr[0] & 0x000000FF) | ((ptr[1] & 0x000000FF) << 8) | ((ptr[2] & 0x000000FF) << 16) | ((ptr[3] & 0x000000FF) << 24);
 	}
 	// Returns a MD5 hash for the file path supplied as parameter
-	std::string MD5::calculateHash(std::string path, bool useAsm){
+	std::string MD5::calculateHash(std::string path, bool useAsm, void (__stdcall *callback)(float)){
 		typedef int(__stdcall *MD5Func)(int, int, int);
 		typedef void(__stdcall *UpdateHash)(int*,int*);
 		MD5Func FFunc = NULL;
@@ -173,6 +173,7 @@
 				arr[2] += res[2];
 				arr[3] += res[3];
 			}
+			callback(1-(float)remaining/8/size);
 			remaining -= 512;
 		}
 		std::stringstream s;
