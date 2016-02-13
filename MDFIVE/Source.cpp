@@ -6,9 +6,8 @@
 #include "GUI.h"
 
 [System::STAThread]
-int main(array<System::String ^> ^args){
+int __stdcall WinMain(_In_ HINSTANCE hInstance,	_In_ HINSTANCE hPrevInstance,	_In_ LPSTR     lpCmdLine,	_In_ int       nCmdShow){
 	MDFIVE::GUI^ windows = gcnew MDFIVE::GUI();
 	windows->ShowDialog();
-
 	return 0;
 }

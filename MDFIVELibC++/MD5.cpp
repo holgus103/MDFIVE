@@ -31,7 +31,7 @@
 		return (ptr[0] & 0x000000FF) | ((ptr[1] & 0x000000FF) << 8) | ((ptr[2] & 0x000000FF) << 16) | ((ptr[3] & 0x000000FF) << 24);
 	}
 	// Returns a MD5 hash for the file path supplied as parameter
-	std::string MD5::calculateHash(std::string path, bool useAsm, void (__stdcall *callback)(float)){
+	std::string MD5::calculateHash(std::string path, bool useAsm, void (__stdcall *callback)(int)){
 		typedef int(__stdcall *MD5Func)(int, int, int);
 		typedef void(__stdcall *UpdateHash)(int*,int*);
 		MD5Func FFunc = NULL;
@@ -42,6 +42,8 @@
 		HMODULE hModule = NULL;
 		int arr[4] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 };
 		int res[4];
+		int lastVal = 0;
+		int newVal = 0;
 		if (useAsm){
 		hModule = LoadLibrary(TEXT("MDFIVEAsmDll.dll"));
 		FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
@@ -173,7 +175,11 @@
 				arr[2] += res[2];
 				arr[3] += res[3];
 			}
-			callback(1-(float)remaining/8/size);
+			if (callback != NULL){
+				newVal = ((1 - (float)remaining / 8 / size)) * 100;
+					if (newVal!= lastVal)
+						callback(newVal);
+			}
 			remaining -= 512;
 		}
 		std::stringstream s;

@@ -53,7 +53,7 @@ namespace MDFIVETest
 			emptyHash.open("empty.txt");
 			emptyHash.close();
 			//test
-			Assert::AreEqual(std::string("d41d8cd98f00b204e9800998ecf8427e"), MD5::calculateHash("empty.txt",false), false);
+			Assert::AreEqual(std::string("d41d8cd98f00b204e9800998ecf8427e"), MD5::calculateHash("empty.txt",false,NULL), false);
 			//after
 			remove("empty.txt");
 		}
@@ -65,7 +65,7 @@ namespace MDFIVETest
 			l448 << "Alles ist wunderbar";
 			l448.close();
 			//test
-			Assert::AreEqual(std::string("c50148fc88daa43d85149ecdfb7f43e3"), MD5::calculateHash("l448.txt",false), false);
+			Assert::AreEqual(std::string("c50148fc88daa43d85149ecdfb7f43e3"), MD5::calculateHash("l448.txt", false, NULL), false);
 			//after
 			remove("l448.txt");
 
@@ -78,7 +78,7 @@ namespace MDFIVETest
 			e448 << "Testujemy fantastyczne metody i musimy miec 56 znakow!!!";
 			e448.close();
 			//test
-			Assert::AreEqual(std::string("2b38ea8cc9e99877945324212652b548"), MD5::calculateHash("e448.txt",false), false);
+			Assert::AreEqual(std::string("2b38ea8cc9e99877945324212652b548"), MD5::calculateHash("e448.txt", false, NULL), false);
 			//after
 			remove("e448.txt");
 
@@ -91,7 +91,7 @@ namespace MDFIVETest
 			m448 << "Testujemy fantastyczne metody i musimy miec ponad 56 znakow!!!";
 			m448.close();
 			//test
-			Assert::AreEqual(std::string("23709204281e62f210fc9f613c92eaa2"), MD5::calculateHash("m448.txt",false), false);
+			Assert::AreEqual(std::string("23709204281e62f210fc9f613c92eaa2"), MD5::calculateHash("m448.txt", false, NULL), false);
 			//after
 			remove("m448.txt");
 
@@ -104,7 +104,7 @@ namespace MDFIVETest
 			e512 << "Testujemy fantastyczne metody, musimy miec dokladnie 64 znaki!!!";
 			e512.close();
 			//test
-			Assert::AreEqual(std::string("9a15857d94fd673c7a09689a180a749e"), MD5::calculateHash("e512.txt",false), false);
+			Assert::AreEqual(std::string("9a15857d94fd673c7a09689a180a749e"), MD5::calculateHash("e512.txt", false, NULL), false);
 			//after
 			remove("e512.txt");
 
@@ -117,7 +117,7 @@ namespace MDFIVETest
 			m512 << "Testujemy fantastyczne metody i musimy miec znacznie wiecej niz 64 znaki!!!";
 			m512.close();
 			//test
-			Assert::AreEqual(std::string("6e1dbf5e493d45db99cd59eaf72db062"), MD5::calculateHash("m512.txt",false), false);
+			Assert::AreEqual(std::string("6e1dbf5e493d45db99cd59eaf72db062"), MD5::calculateHash("m512.txt", false, NULL), false);
 			//after
 			remove("m512.txt");
 		}
@@ -129,7 +129,7 @@ namespace MDFIVETest
 			emptyHash.open("empty.txt");
 			emptyHash.close();
 			//test
-			Assert::AreEqual(std::string("d41d8cd98f00b204e9800998ecf8427e"), MD5::calculateHash("empty.txt", true), false);
+			Assert::AreEqual(std::string("d41d8cd98f00b204e9800998ecf8427e"), MD5::calculateHash("empty.txt", true, NULL), false);
 			//after
 			remove("empty.txt");
 		}
@@ -141,7 +141,7 @@ namespace MDFIVETest
 			l448 << "Alles ist wunderbar";
 			l448.close();
 			//test
-			Assert::AreEqual(std::string("c50148fc88daa43d85149ecdfb7f43e3"), MD5::calculateHash("l448.txt", true), false);
+			Assert::AreEqual(std::string("c50148fc88daa43d85149ecdfb7f43e3"), MD5::calculateHash("l448.txt", true, NULL), false);
 			//after
 			remove("l448.txt");
 
@@ -154,7 +154,7 @@ namespace MDFIVETest
 			e448 << "Testujemy fantastyczne metody i musimy miec 56 znakow!!!";
 			e448.close();
 			//test
-			Assert::AreEqual(std::string("2b38ea8cc9e99877945324212652b548"), MD5::calculateHash("e448.txt", true), false);
+			Assert::AreEqual(std::string("2b38ea8cc9e99877945324212652b548"), MD5::calculateHash("e448.txt", true, NULL), false);
 			//after
 			remove("e448.txt");
 
@@ -167,7 +167,7 @@ namespace MDFIVETest
 			m448 << "Testujemy fantastyczne metody i musimy miec ponad 56 znakow!!!";
 			m448.close();
 			//test
-			Assert::AreEqual(std::string("23709204281e62f210fc9f613c92eaa2"), MD5::calculateHash("m448.txt", true), false);
+			Assert::AreEqual(std::string("23709204281e62f210fc9f613c92eaa2"), MD5::calculateHash("m448.txt", true, NULL), false);
 			//after
 			remove("m448.txt");
 
@@ -180,7 +180,7 @@ namespace MDFIVETest
 			e512 << "Testujemy fantastyczne metody, musimy miec dokladnie 64 znaki!!!";
 			e512.close();
 			//test
-			Assert::AreEqual(std::string("9a15857d94fd673c7a09689a180a749e"), MD5::calculateHash("e512.txt", true), false);
+			Assert::AreEqual(std::string("9a15857d94fd673c7a09689a180a749e"), MD5::calculateHash("e512.txt", true, NULL), false);
 			//after
 			remove("e512.txt");
 
@@ -193,7 +193,7 @@ namespace MDFIVETest
 			m512 << "Testujemy fantastyczne metody i musimy miec znacznie wiecej niz 64 znaki!!!";
 			m512.close();
 			//test
-			Assert::AreEqual(std::string("6e1dbf5e493d45db99cd59eaf72db062"), MD5::calculateHash("m512.txt", true), false);
+			Assert::AreEqual(std::string("6e1dbf5e493d45db99cd59eaf72db062"), MD5::calculateHash("m512.txt", true, NULL), false);
 			//after
 			remove("m512.txt");
 
