@@ -1,0 +1,7 @@
+    LIBRARY MD5Func
+    EXPORTS
+       FFunc
+       GFunc
+	   HFunc
+	   IFunc
+	   UpdateHash

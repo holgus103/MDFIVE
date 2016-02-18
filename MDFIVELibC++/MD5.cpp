@@ -6,6 +6,7 @@
 #include <sstream>
 #include <Windows.h>
 #include <time.h>
+
 	// Performs a simple rotation
 	int MD5::leftRotate(unsigned int a, int i){
 		return (a << i | a >> 32 - i);
@@ -34,6 +35,7 @@
 	std::string MD5::calculateHash(std::string path, bool useAsm, void (__stdcall *callback)(int)){
 		typedef int(__stdcall *MD5Func)(int, int, int);
 		typedef void(__stdcall *UpdateHash)(int*,int*);
+		std::string libName;
 		MD5Func FFunc = NULL;
 		MD5Func GFunc = NULL;
 		MD5Func HFunc = NULL;
@@ -45,13 +47,17 @@
 		int lastVal = 0;
 		int newVal = 0;
 		if (useAsm){
-		hModule = LoadLibrary(TEXT("MDFIVEAsmDll.dll"));
+			libName = "MDFIVEAsmDll.dll";
+		}
+		else{
+			libName = "MDFIVEC++Dll.dll";
+		}
+		hModule = LoadLibrary(TEXT(libName.c_str()));
 		FFunc = (MD5Func)GetProcAddress(hModule, "FFunc");
 		GFunc = (MD5Func)GetProcAddress(hModule, "GFunc");
 		HFunc = (MD5Func)GetProcAddress(hModule, "HFunc");
 		IFunc = (MD5Func)GetProcAddress(hModule, "IFunc");
 		updateHash = (UpdateHash)GetProcAddress(hModule, "UpdateHash");
-		}
 		int shifts[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, //0-15
 			5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, //15-31
 			4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, //32-47
@@ -122,7 +128,6 @@
 			int g;
 			//main loop
 			for (int i = 0; i < 64; i++){
-				if (useAsm){
 					if (0 <= i && i <= 15){//F
 						F = FFunc(res[1],res[2],res[3]);
 						g = i;
@@ -139,25 +144,6 @@
 						F = IFunc(res[1], res[2], res[3]);
 						g = ((7 * i) & 0x0F);
 					}
-				}
-				else{
-					if (0 <= i && i <= 15){//F
-						F = (res[1] & res[2]) | ((~res[1]) & res[3]);
-						g = i;
-					}
-					else if (16 <= i && i <= 31){//G
-						F = (res[3] & res[1]) | ((~res[3]) & res[2]);
-						g = ((5 * i + 1) & 0x0F);
-					}
-					else if (32 <= i & i <= 47){//H
-						F = res[1] ^ res[2] ^ res[3];
-						g = ((3 * i + 5) & 0x0F);
-					}
-					else if (48 <= i & i <= 63){//I
-						F = res[2] ^ (res[1] | (~res[3]));
-						g = ((7 * i) & 0x0F);
-					}
-				}
 				temp = res[3];
 				res[3] = res[2];
 				res[2] = res[1];
@@ -166,19 +152,16 @@
 
 
 			}
-			if (useAsm){
+
 				updateHash(arr, res);
-			}
-			else{
-				arr[0] += res[0];
-				arr[1] += res[1];
-				arr[2] += res[2];
-				arr[3] += res[3];
-			}
+
+
 			if (callback != NULL){
 				newVal = ((1 - (float)remaining / 8 / size)) * 100;
-					if (newVal!= lastVal)
-						callback(newVal);
+				if (newVal != lastVal){
+					callback(newVal);
+					lastVal = newVal;
+				}
 			}
 			remaining -= 512;
 		}
